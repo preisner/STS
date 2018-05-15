@@ -10,7 +10,6 @@
 #define DATA_FILE "/dev/urandom"
 #define SERVER_ADDR "172.30.1.61"
 #define SERVER_PORT 9300
-//#define DATA_FILE "/home/janghoon/examples.desktop"
 
 typedef struct {
     unsigned int buffer_size;
@@ -34,7 +33,7 @@ int read_data(int fp, char **p_buff, unsigned int buff_size){
         return 1;
     }
 }
-int copy_buff(char *p_buff_src, char *p_buff_dst, unsigned int buff_size){
+int copy_buffer(char *p_buff_src, char *p_buff_dst, unsigned int buff_size){
     memcpy(p_buff_dst, p_buff_src, buff_size);
     return 1;
 }
@@ -60,13 +59,15 @@ int main(int argc, char **argv) {
     conf.buffer_size = 4096;
     conf.num_times = 1;
 
-    while((opt = getopt(argc, argv, "n:b:")) != -1){
+    while((opt = getopt(argc, argv, "n:s:")) != -1){
         switch(opt){
-            case 'b':
+            case 's':
                 conf.buffer_size = atoi(optarg);
                 break;
             case 'n':
                 conf.num_times = atoi(optarg);
+                break;
+            default:
                 break;
         }
     }
@@ -80,7 +81,7 @@ int main(int argc, char **argv) {
        exit(1);
     }
     memset(&servAddr, 0, sizeof(servAddr));
-    /* servAddr에 IP 주소와 포트 번호를 저장 */
+
     servAddr.sin_family = AF_INET;
     servAddr.sin_addr.s_addr = inet_addr(SERVER_ADDR);
     servAddr.sin_port = htons(SERVER_PORT);
@@ -91,8 +92,11 @@ int main(int argc, char **argv) {
         // p_buff_udp : data to send to UDP
         allocate_buffer(&p_buff_file, conf.buffer_size);
         allocate_buffer(&p_buff_udp, conf.buffer_size);
+        // read and copy data to buffer, p_buff_file
         read_data(fp, &p_buff_file, conf.buffer_size);
-        copy_buff(p_buff_file, p_buff_udp, conf.buffer_size);
+        // copy data to p_buff_udp
+        copy_buffer(p_buff_file, p_buff_udp, conf.buffer_size);
+        // send p_buff_udp to UDP socket
         send_message(p_buff_udp, conf.buffer_size, sockfd, servAddr);
         free((void *)p_buff_file);
         free((void *)p_buff_udp);
@@ -100,8 +104,6 @@ int main(int argc, char **argv) {
     }
     close(fp);
     
-    //printf("SRC String : %s\n", p_buff_file);
-    //printf("DST String : %s\n", p_buff_udp);
     printf("Completed. buffer_size : %i, num_times : %i\n", conf.buffer_size, conf.num_times);
     exit(0);
 }
